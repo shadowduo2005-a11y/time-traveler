@@ -1,0 +1,53 @@
+services:
+
+  database:
+    image: postgres:15-alpine
+    container_name: prod-database
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: patient_records
+    volumes:
+      - prod-db-data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - prod-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d patient_records"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+
+  backend:
+    build: ./backend
+    container_name: prod-backend
+    environment:
+      POSTGRES_HOST: database
+      POSTGRES_DB: patient_records
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    networks:
+      - prod-net
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: prod-frontend
+    ports:
+      - "80:80"
+    networks:
+      - prod-net
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  prod-net:
+    driver: bridge
+
+volumes:
+  prod-db-data:

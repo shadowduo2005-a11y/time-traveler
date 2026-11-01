@@ -1,0 +1,18 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+
+# GitLab artifacts (removed during GitHub migration)
+.gitlab-ci.yml
+.gitlab/
+.ai-catalog-mapping.json

@@ -1,0 +1,16 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": [
+    "backend",
+    "flows"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "backend"
+    },
+    {
+      "root": "flows"
+    }
+  ]
+}

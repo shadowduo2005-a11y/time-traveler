@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Records</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar:        #0f172a;
+      --sidebar-border: rgba(255,255,255,0.06);
+      --sidebar-hover:  rgba(255,255,255,0.05);
+      --sidebar-active: rgba(255,255,255,0.09);
+      --sidebar-text:   #64748b;
+      --sidebar-hi:     #f1f5f9;
+      --accent:         #3b82f6;
+      --accent-dark:    #2563eb;
+      --bg:             #f1f5f9;
+      --surface:        #ffffff;
+      --border:         #e2e8f0;
+      --border-subtle:  #f1f5f9;
+      --text:           #0f172a;
+      --text-2:         #475569;
+      --text-3:         #94a3b8;
+      --green:          #10b981;
+      --red:            #ef4444;
+      --amber:          #f59e0b;
+      --r:              8px;
+      --r-lg:           12px;
+      --sidebar-w:      228px;
+      --top-h:          52px;
+    }
+
+    html { font-size: 14px; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: var(--sidebar-w); height: 100vh;
+      background: var(--sidebar);
+      display: flex; flex-direction: column;
+      z-index: 200;
+      transition: background .3s;
+    }
+
+    .sidebar-top {
+      padding: 18px 14px 14px;
+      border-bottom: 1px solid var(--sidebar-border);
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 30px; height: 30px; border-radius: 7px;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .3s;
+    }
+    .logo-mark svg { width: 16px; height: 16px; }
+    .logo-name {
+      font-size: 13px; font-weight: 600;
+      color: #f8fafc; line-height: 1.25;
+    }
+    .logo-sub { font-size: 11px; color: var(--sidebar-text); font-weight: 400; }
+
+    .sidebar-nav {
+      flex: 1; padding: 10px 8px;
+      display: flex; flex-direction: column; gap: 1px;
+      overflow-y: auto;
+    }
+
+    .nav-section-label {
+      padding: 12px 8px 5px;
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--sidebar-text);
+    }
+
+    .nav-btn {
+      all: unset;
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 9px; border-radius: 6px;
+      color: var(--sidebar-text); font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all .12s;
+      width: 100%;
+    }
+    .nav-btn:hover { background: var(--sidebar-hover); color: var(--sidebar-hi); }
+    .nav-btn.active { background: var(--sidebar-active); color: #f8fafc; }
+    .nav-btn svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .65; }
+    .nav-btn:hover svg, .nav-btn.active svg { opacity: 1; }
+    .nav-count {
+      margin-left: auto;
+      background: rgba(255,255,255,0.08);
+      font-size: 11px; font-weight: 600; color: #64748b;
+      padding: 0 7px; border-radius: 999px; min-width: 22px; text-align: center;
+    }
+    .nav-btn.active .nav-count { background: var(--accent); color: #fff; }
+
+    .sidebar-footer {
+      padding: 12px 14px;
+      border-top: 1px solid var(--sidebar-border);
+    }
+    .env-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 7px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--sidebar-border);
+    }
+    .pulse-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.15);
+      flex-shrink: 0;
+    }
+    .pulse-dot.warn { background: var(--amber); box-shadow: 0 0 0 3px rgba(245,158,11,.15); }
+    .env-info { flex: 1; min-width: 0; }
+    .env-name { font-size: 11.5px; font-weight: 600; color: #f1f5f9; }
+    .env-detail { font-size: 10.5px; color: var(--sidebar-text); }
+
+    /* ── Main shell ── */
+    .shell {
+      margin-left: var(--sidebar-w);
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Clone banner ── */
+    .clone-banner {
+      display: none;
+      align-items: center; gap: 10px;
+      padding: 9px 24px;
+      background: #fffbeb;
+      border-bottom: 1px solid #fde68a;
+      font-size: 12.5px; font-weight: 500; color: #78350f;
+    }
+    .clone-banner.show { display: flex; }
+    .clone-banner svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .clone-banner strong { font-weight: 700; }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: var(--top-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-title { font-size: 14px; font-weight: 600; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .health-indicator {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-2);
+    }
+    .health-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; }
+    .health-dot.ok  { background: var(--green); box-shadow: 0 0 0 2px rgba(16,185,129,.2); }
+    .health-dot.err { background: var(--red);   box-shadow: 0 0 0 2px rgba(239,68,68,.2); }
+
+    /* ── Content ── */
+    .content { padding: 24px; flex: 1; }
+
+    /* ── Stats ── */
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin-bottom: 24px;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-icon {
+      width: 38px; height: 38px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+    .stat-icon.emerald{ background: #ecfdf5; color: #10b981; }
+    .stat-icon.violet { background: #f5f3ff; color: #7c3aed; }
+    .stat-icon svg { width: 18px; height: 18px; }
+    .stat-num { font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+    .stat-lbl { font-size: 12px; color: var(--text-3); font-weight: 500; }
+
+    /* ── Section card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .card-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-title { font-size: 13.5px; font-weight: 600; flex: 1; }
+    .card-count {
+      font-size: 11.5px; font-weight: 500; color: var(--text-3);
+      background: var(--bg); padding: 1px 8px; border-radius: 999px;
+    }
+    .btn-add {
+      all: unset;
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 6px;
+      background: var(--accent); color: #fff;
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      transition: background .12s;
+    }
+    .btn-add:hover { background: var(--accent-dark); }
+    .btn-add svg { width: 13px; height: 13px; }
+
+    /* ── Add form ── */
+    .form-panel {
+      padding: 16px 20px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-subtle);
+      display: none;
+    }
+    .form-panel.open { display: block; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px; align-items: end;
+    }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label {
+      font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text-2);
+    }
+    .field input, .field select {
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 13px; font-family: inherit;
+      color: var(--text); background: #fff; outline: none;
+      width: 100%; transition: border-color .12s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field input::placeholder { color: var(--text-3); }
+    .form-footer {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 12px;
+    }
+    .btn-save {
+      all: unset;
+      padding: 7px 18px; border-radius: 6px;
+      background: var(--accent); color: #fff;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background .12s;
+    }
+    .btn-save:hover { background: var(--accent-dark); }
+    .btn-cancel {
+      all: unset;
+      padding: 7px 14px; border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 13px; color: var(--text-2); cursor: pointer;
+      transition: background .12s;
+    }
+    .btn-cancel:hover { background: var(--bg); }
+    .form-err { font-size: 12px; color: var(--red); margin-top: 8px; min-height: 15px; }
+
+    /* ── Table ── */
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 8px 16px; text-align: left;
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--text-3); background: #f8fafc;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody td {
+      padding: 10px 16px; border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fafc; }
+
+    /* ── Cell helpers ── */
+    .with-avatar { display: flex; align-items: center; gap: 9px; }
+    .avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10.5px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .cell-name { font-weight: 500; }
+    .cell-sub  { font-size: 11.5px; color: var(--text-3); margin-top: 1px; }
+    .muted     { color: var(--text-3); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 999px;
+      font-size: 11.5px; font-weight: 500; white-space: nowrap;
+    }
+    .b-blue   { background: #eff6ff; color: #1d4ed8; }
+    .b-green  { background: #ecfdf5; color: #065f46; }
+    .b-red    { background: #fef2f2; color: #991b1b; }
+    .b-amber  { background: #fffbeb; color: #92400e; }
+    .b-slate  { background: #f1f5f9; color: #475569; }
+    .b-violet { background: #f5f3ff; color: #5b21b6; }
+    .b-teal   { background: #f0fdfa; color: #0f766e; }
+    .b-pink   { background: #fdf2f8; color: #9d174d; }
+
+    /* ── Delete button ── */
+    .btn-del {
+      all: unset;
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-3); transition: all .12s;
+    }
+    .btn-del:hover { background: #fef2f2; color: var(--red); border-color: #fecaca; }
+    .btn-del svg { width: 13px; height: 13px; }
+
+    /* ── Empty ── */
+    .empty { padding: 44px; text-align: center; }
+    .empty svg { width: 32px; height: 32px; color: #d1d5db; margin: 0 auto 10px; display: block; }
+    .empty p { font-size: 13px; color: var(--text-3); }
+
+    /* ── Toast ── */
+    #toasts {
+      position: fixed; top: 16px; right: 16px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-radius: var(--r);
+      font-size: 13px; font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,.1);
+      pointer-events: all;
+      animation: tin .2s ease;
+    }
+    .toast svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .toast.ok  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .toast.err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    @keyframes tin { from { opacity:0; transform: translateX(16px); } to { opacity:1; transform: none; } }
+
+    /* ── Shadow clone overrides ── */
+    .is-clone { --accent: #d97706; --accent-dark: #b45309; }
+    .is-clone .sidebar     { background: #1a0a00; }
+    .is-clone .logo-mark   { background: #d97706; }
+    .is-clone .nav-btn.active .nav-count { background: #d97706; }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      :root { --sidebar-w: 0px; }
+      .sidebar { transform: translateX(-100%); }
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .stats { grid-template-columns: 1fr; }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-top">
+    <a class="logo" href="#">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">Patient Records</div>
+        <div class="logo-sub">Time-Traveler Demo</div>
+      </div>
+    </a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Records</div>
+
+    <button class="nav-btn active" id="nav-doctors" onclick="showSection('doctors')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+        <path d="M12 14v4M10 16h4"/>
+      </svg>
+      Doctors
+      <span class="nav-count" id="nav-doctors-count">0</span>
+    </button>
+
+    <button class="nav-btn" id="nav-patients" onclick="showSection('patients')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      Patients
+      <span class="nav-count" id="nav-patients-count">0</span>
+    </button>
+
+    <button class="nav-btn" id="nav-appointments" onclick="showSection('appointments')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      Appointments
+      <span class="nav-count" id="nav-appts-count">0</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="env-pill">
+      <div class="pulse-dot" id="env-dot"></div>
+      <div class="env-info">
+        <div class="env-name" id="env-name">Production</div>
+        <div class="env-detail" id="env-detail">Live environment</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main shell -->
+<div class="shell">
+
+  <!-- Clone banner -->
+  <div class="clone-banner" id="clone-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span><strong>Shadow Clone</strong> — Port <span id="clone-port"></span> — Preview environment deployed by Time-Traveler. Changes here will <strong>not</strong> affect production.</span>
+  </div>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="topbar-title" id="topbar-title">Doctors</span>
+    <div class="topbar-right">
+      <div class="health-indicator">
+        <div class="health-dot" id="health-dot"></div>
+        <span id="health-text">Checking…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="content">
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+            <path d="M12 14v4M10 16h4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-num" id="stat-doctors">—</div>
+          <div class="stat-lbl">Doctors</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon emerald">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-num" id="stat-patients">—</div>
+          <div class="stat-lbl">Patients</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon violet">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-num" id="stat-appts">—</div>
+          <div class="stat-lbl">Appointments</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doctors section -->
+    <div id="section-doctors" class="card">
+      <div class="card-header">
+        <span class="card-title">Doctors</span>
+        <span class="card-count" id="doctors-count">0</span>
+        <button class="btn-add" onclick="toggleForm('doctors-form')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Doctor
+        </button>
+      </div>
+      <div class="form-panel" id="doctors-form">
+        <div class="form-grid">
+          <div class="field"><label>Full Name</label><input id="doc-name" placeholder="Dr. Jane Smith" /></div>
+          <div class="field"><label>Specialty</label><input id="doc-specialty" placeholder="Cardiology" /></div>
+          <div class="field"><label>Email</label><input id="doc-email" type="email" placeholder="jane@hospital.com" /></div>
+          <div class="field"><label>Phone</label><input id="doc-phone" type="tel" placeholder="+1-555-000-0000" /></div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-save" onclick="addDoctor()">Save Doctor</button>
+          <button class="btn-cancel" onclick="toggleForm('doctors-form')">Cancel</button>
+        </div>
+        <div class="form-err" id="doctor-error-msg"></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Doctor</th><th>Specialty</th><th>Email</th><th>Phone</th><th></th></tr>
+          </thead>
+          <tbody id="doctors-body">
+            <tr><td colspan="5"><div class="empty"><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Patients section -->
+    <div id="section-patients" class="card" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Patients</span>
+        <span class="card-count" id="patients-count">0</span>
+        <button class="btn-add" onclick="toggleForm('patients-form')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Patient
+        </button>
+      </div>
+      <div class="form-panel" id="patients-form">
+        <div class="form-grid">
+          <div class="field"><label>Full Name</label><input id="name" placeholder="Jane Smith" /></div>
+          <div class="field"><label>Date of Birth</label><input id="dob" type="date" /></div>
+          <div class="field"><label>Email</label><input id="email" type="email" placeholder="jane@example.com" /></div>
+          <div class="field"><label>Phone</label><input id="phone" type="tel" placeholder="+1-555-000-0000" /></div>
+          <div class="field"><label>Notes</label><input id="notes" placeholder="Clinical notes…" /></div>
+          <div class="field"><label>Assign Doctor</label>
+            <select id="doctor-select"><option value="">— Unassigned —</option></select>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-save" onclick="addPatient()">Save Patient</button>
+          <button class="btn-cancel" onclick="toggleForm('patients-form')">Cancel</button>
+        </div>
+        <div class="form-err" id="error-msg"></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Patient</th><th>Date of Birth</th><th>Email</th><th>Phone</th><th>Doctor</th><th>Notes</th><th></th></tr>
+          </thead>
+          <tbody id="patients-body">
+            <tr><td colspan="7"><div class="empty"><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Appointments section -->
+    <div id="section-appointments" class="card" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Appointments</span>
+        <span class="card-count" id="appt-count">0</span>
+        <button class="btn-add" onclick="toggleForm('appts-form')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Appointment
+        </button>
+      </div>
+      <div class="form-panel" id="appts-form">
+        <div class="form-grid">
+          <div class="field"><label>Patient</label>
+            <select id="appt-patient"><option value="">— Select —</option></select>
+          </div>
+          <div class="field"><label>Doctor</label>
+            <select id="appt-doctor"><option value="">— Select —</option></select>
+          </div>
+          <div class="field"><label>Date &amp; Time</label><input id="appt-date" type="datetime-local" /></div>
+          <div class="field"><label>Reason</label><input id="appt-reason" placeholder="Annual checkup…" /></div>
+          <div class="field"><label>Status</label>
+            <select id="appt-status">
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn-save" onclick="addAppointment()">Save Appointment</button>
+          <button class="btn-cancel" onclick="toggleForm('appts-form')">Cancel</button>
+        </div>
+        <div class="form-err" id="appt-error-msg"></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>Patient</th><th>Doctor</th><th>Date &amp; Time</th><th>Reason</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="appts-body">
+            <tr><td colspan="6"><div class="empty"><p>Loading…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = '/api';
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+
+const AVATAR_COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#6366f1','#14b8a6','#f97316','#ec4899','#0ea5e9'];
+function avatarColor(name) { return AVATAR_COLORS[(name || '').charCodeAt(0) % AVATAR_COLORS.length]; }
+function initials(name)     { return (name || '??').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(); }
+
+function toast(msg, type = 'ok') {
+  const icon = type === 'ok'
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = icon + msg;
+  document.getElementById('toasts').prepend(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function specialtyBadge(s) {
+  const map = {
+    'Cardiology':'b-red','Neurology':'b-violet','Oncology':'b-pink','Pediatrics':'b-green',
+    'Orthopedics':'b-amber','Dermatology':'b-teal','Gastroenterology':'b-blue','Psychiatry':'b-slate'
+  };
+  return `<span class="badge ${map[s] || 'b-slate'}">${s}</span>`;
+}
+
+function statusBadge(s) {
+  const map = { scheduled:'b-blue', completed:'b-green', cancelled:'b-red' };
+  return `<span class="badge ${map[s] || 'b-slate'}">${s}</span>`;
+}
+
+function emptyRow(cols, msg = 'No records yet.') {
+  return `<tr><td colspan="${cols}"><div class="empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>
+    </svg>
+    <p>${msg}</p>
+  </div></td></tr>`;
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+
+function showSection(name) {
+  ['doctors','patients','appointments'].forEach(s => {
+    document.getElementById(`section-${s}`).style.display = s === name ? '' : 'none';
+    document.getElementById(`nav-${s}`).classList.toggle('active', s === name);
+  });
+  const titles = { doctors:'Doctors', patients:'Patients', appointments:'Appointments' };
+  document.getElementById('topbar-title').textContent = titles[name];
+}
+
+function toggleForm(id) {
+  const panel = document.getElementById(id);
+  panel.classList.toggle('open');
+}
+
+// ── Health ─────────────────────────────────────────────────────────────────
+
+async function checkHealth() {
+  const dot  = document.getElementById('health-dot');
+  const text = document.getElementById('health-text');
+  try {
+    const res  = await fetch(`${API}/health`);
+    const data = await res.json();
+    if (res.ok) { dot.className = 'health-dot ok'; text.textContent = 'Healthy'; }
+    else        { throw new Error(data.detail); }
+  } catch { dot.className = 'health-dot err'; text.textContent = 'Unhealthy'; }
+}
+
+// ── Doctors ────────────────────────────────────────────────────────────────
+
+async function loadDoctors() {
+  const tbody  = document.getElementById('doctors-body');
+  const sel    = document.getElementById('doctor-select');
+  try {
+    const data    = await (await fetch(`${API}/doctors`)).json();
+    const doctors = data.doctors;
+    const n       = doctors.length;
+
+    document.getElementById('doctors-count').textContent     = n;
+    document.getElementById('stat-doctors').textContent      = n;
+    document.getElementById('nav-doctors-count').textContent = n;
+
+    sel.innerHTML = '<option value="">— Unassigned —</option>' +
+      doctors.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+
+    if (!n) { tbody.innerHTML = emptyRow(5, 'No doctors yet. Add one above.'); return; }
+
+    tbody.innerHTML = doctors.map(d => `
+      <tr>
+        <td><div class="with-avatar">
+          <div class="avatar" style="background:${avatarColor(d.name)}">${initials(d.name)}</div>
+          <div><div class="cell-name">${d.name}</div></div>
+        </div></td>
+        <td>${specialtyBadge(d.specialty)}</td>
+        <td class="muted">${d.email}</td>
+        <td class="muted">${d.phone || '—'}</td>
+        <td><button class="btn-del" onclick="deleteDoctor(${d.id})" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button></td>
+      </tr>
+    `).join('');
+  } catch (e) { tbody.innerHTML = emptyRow(5, e.message); }
+}
+
+async function addDoctor() {
+  const err      = document.getElementById('doctor-error-msg');
+  err.textContent = '';
+  const name     = document.getElementById('doc-name').value.trim();
+  const specialty= document.getElementById('doc-specialty').value.trim();
+  const email    = document.getElementById('doc-email').value.trim();
+  const phone    = document.getElementById('doc-phone').value.trim();
+  if (!name || !specialty || !email) { err.textContent = 'Name, specialty and email are required.'; return; }
+  try {
+    const res = await fetch(`${API}/doctors`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, specialty, email, phone: phone || null })
+    });
+    if (res.ok) {
+      ['doc-name','doc-specialty','doc-email','doc-phone'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('doctors-form').classList.remove('open');
+      await loadDoctors();
+      toast('Doctor added successfully.');
+    } else { const d = await res.json(); err.textContent = d.detail || 'Failed to add doctor.'; }
+  } catch(e) { err.textContent = e.message; }
+}
+
+async function deleteDoctor(id) {
+  if (!confirm(`Remove doctor #${id}? Assigned patients will become unassigned.`)) return;
+  await fetch(`${API}/doctors/${id}`, { method:'DELETE' });
+  await Promise.all([loadDoctors(), loadPatients()]);
+  toast('Doctor removed.');
+}
+
+// ── Patients ───────────────────────────────────────────────────────────────
+
+async function loadPatients() {
+  const tbody = document.getElementById('patients-body');
+  try {
+    const data     = await (await fetch(`${API}/patients`)).json();
+    const patients = data.patients;
+    const n        = patients.length;
+
+    document.getElementById('patients-count').textContent       = n;
+    document.getElementById('stat-patients').textContent        = n;
+    document.getElementById('nav-patients-count').textContent   = n;
+
+    if (!n) { tbody.innerHTML = emptyRow(7, 'No patients yet. Add one above.'); return; }
+
+    tbody.innerHTML = patients.map(p => `
+      <tr>
+        <td><div class="with-avatar">
+          <div class="avatar" style="background:${avatarColor(p.name)}">${initials(p.name)}</div>
+          <div><div class="cell-name">${p.name}</div></div>
+        </div></td>
+        <td class="muted">${p.date_of_birth}</td>
+        <td class="muted">${p.email}</td>
+        <td class="muted">${p.phone_number || '—'}</td>
+        <td>${p.doctor_name ? `<span class="badge b-slate">${p.doctor_name}</span>` : '<span class="muted">—</span>'}</td>
+        <td class="muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.notes||''}">${p.notes || '—'}</td>
+        <td><button class="btn-del" onclick="deletePatient(${p.id})" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button></td>
+      </tr>
+    `).join('');
+  } catch(e) { tbody.innerHTML = emptyRow(7, e.message); }
+}
+
+async function addPatient() {
+  const err = document.getElementById('error-msg');
+  err.textContent = '';
+  const name     = document.getElementById('name').value.trim();
+  const dob      = document.getElementById('dob').value;
+  const email    = document.getElementById('email').value.trim();
+  const phone    = document.getElementById('phone').value.trim();
+  const notes    = document.getElementById('notes').value.trim();
+  const doctorId = document.getElementById('doctor-select').value;
+  if (!name || !dob || !email) { err.textContent = 'Name, date of birth and email are required.'; return; }
+  try {
+    const res = await fetch(`${API}/patients`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, date_of_birth:dob, email,
+        phone_number: phone || null, notes: notes || null,
+        doctor_id: doctorId ? parseInt(doctorId) : null })
+    });
+    if (res.ok) {
+      ['name','dob','email','phone','notes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('doctor-select').value = '';
+      document.getElementById('patients-form').classList.remove('open');
+      await loadPatients();
+      toast('Patient added successfully.');
+    } else { const d = await res.json(); err.textContent = d.detail || 'Failed to add patient.'; }
+  } catch(e) { err.textContent = e.message; }
+}
+
+async function deletePatient(id) {
+  if (!confirm(`Remove patient #${id}?`)) return;
+  await fetch(`${API}/patients/${id}`, { method:'DELETE' });
+  await loadPatients();
+  toast('Patient removed.');
+}
+
+// ── Appointments ───────────────────────────────────────────────────────────
+
+async function loadAppointments() {
+  const tbody = document.getElementById('appts-body');
+  try {
+    const [apptRes, patRes, docRes] = await Promise.all([
+      fetch(`${API}/appointments`), fetch(`${API}/patients`), fetch(`${API}/doctors`)
+    ]);
+    const appts    = (await apptRes.json()).appointments;
+    const patients = (await patRes.json()).patients;
+    const doctors  = (await docRes.json()).doctors;
+
+    document.getElementById('appt-count').textContent         = appts.length;
+    document.getElementById('stat-appts').textContent         = appts.length;
+    document.getElementById('nav-appts-count').textContent    = appts.length;
+
+    document.getElementById('appt-patient').innerHTML =
+      '<option value="">— Select —</option>' + patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    document.getElementById('appt-doctor').innerHTML =
+      '<option value="">— Select —</option>' + doctors.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+
+    if (!appts.length) { tbody.innerHTML = emptyRow(6, 'No appointments yet. Add one above.'); return; }
+
+    tbody.innerHTML = appts.map(a => `
+      <tr>
+        <td><div class="with-avatar">
+          <div class="avatar" style="background:${avatarColor(a.patient_name)}">${initials(a.patient_name)}</div>
+          <div class="cell-name">${a.patient_name}</div>
+        </div></td>
+        <td><span class="badge b-slate">${a.doctor_name}</span></td>
+        <td class="muted">${new Date(a.appointment_date).toLocaleString([], {dateStyle:'medium',timeStyle:'short'})}</td>
+        <td class="muted">${a.reason || '—'}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td><button class="btn-del" onclick="deleteAppointment(${a.id})" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button></td>
+      </tr>
+    `).join('');
+  } catch(e) { tbody.innerHTML = emptyRow(6, e.message); }
+}
+
+async function addAppointment() {
+  const err = document.getElementById('appt-error-msg');
+  err.textContent = '';
+  const patientId = document.getElementById('appt-patient').value;
+  const doctorId  = document.getElementById('appt-doctor').value;
+  const date      = document.getElementById('appt-date').value;
+  const reason    = document.getElementById('appt-reason').value.trim();
+  const status    = document.getElementById('appt-status').value;
+  if (!patientId || !doctorId || !date) { err.textContent = 'Patient, doctor and date are required.'; return; }
+  try {
+    const res = await fetch(`${API}/appointments`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ patient_id:parseInt(patientId), doctor_id:parseInt(doctorId),
+        appointment_date:date, reason:reason||null, status })
+    });
+    if (res.ok) {
+      ['appt-patient','appt-doctor','appt-date','appt-reason'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('appts-form').classList.remove('open');
+      await loadAppointments();
+      toast('Appointment scheduled.');
+    } else { const d = await res.json(); err.textContent = d.detail || 'Failed to add appointment.'; }
+  } catch(e) { err.textContent = e.message; }
+}
+
+async function deleteAppointment(id) {
+  if (!confirm(`Remove appointment #${id}?`)) return;
+  await fetch(`${API}/appointments/${id}`, { method:'DELETE' });
+  await loadAppointments();
+  toast('Appointment removed.');
+}
+
+// ── Shadow clone detection ─────────────────────────────────────────────────
+
+(function() {
+  const port = window.location.port;
+  if (port && !['80','443',''].includes(port)) {
+    document.body.classList.add('is-clone');
+    document.getElementById('env-dot').classList.add('warn');
+    document.getElementById('env-name').textContent    = 'Shadow Clone';
+    document.getElementById('env-detail').textContent  = `Port :${port}`;
+    document.getElementById('clone-port').textContent  = `:${port}`;
+    document.getElementById('clone-banner').classList.add('show');
+    document.title = `[SHADOW :${port}] Patient Records`;
+  }
+})();
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+checkHealth();
+loadDoctors();
+loadPatients();
+loadAppointments();
+</script>
+</body>
+</html>
