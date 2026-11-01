@@ -131,6 +131,8 @@ Minimum local configuration:
 ```env
 MCP_API_KEY=replace-with-a-random-local-key
 POSTGRES_PASSWORD=replace-with-a-strong-local-password
+GEMINI_API_KEY=replace-with-your-google-ai-studio-key
+GEMINI_MODEL=gemini-2.5-flash
 SHADOW_DB_PASSWORD=
 VM_PUBLIC_IP=127.0.0.1
 MCP_PORT=8888
@@ -145,6 +147,12 @@ SCHEMA_SQL=/absolute/path/to/time-traveler/db/schema.sql
 ```
 
 Never commit `.env`. It is excluded by `.gitignore`.
+
+Gemini runs in three LangGraph nodes: Architect performs semantic architecture
+review, Auditor adds domain/privacy/operational findings, and Data Smith proposes
+fictional seed-value hints. Deterministic rules remain authoritative and Gemini
+can only make the migration verdict stricter. The API key is read directly from
+the environment and is never stored in graph state or printed output.
 
 ## 7. Start the MCP bridge
 
@@ -176,6 +184,13 @@ It does not call Docker or the bridge.
 ```bash
 .venv/bin/python flows/orchestrator.py 42
 ```
+
+AI modes:
+
+- `--ai-mode auto` (default): use Gemini when a key exists, otherwise use the
+  deterministic fallback.
+- `--ai-mode required`: fail the pipeline if Gemini is unavailable.
+- `--ai-mode off`: run only deterministic checks, useful for offline CI.
 
 Successful dry-run status:
 

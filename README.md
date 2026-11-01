@@ -1,7 +1,8 @@
 # Time-Traveler
 
-Time-Traveler is a Python and LangGraph system for analyzing database migrations,
-creating isolated Docker shadow environments, and validating them before release.
+Time-Traveler is a Python, LangGraph, and Gemini system for analyzing database
+migrations, creating isolated Docker shadow environments, and validating them
+before release. Deterministic SQL checks remain active even when Gemini is off.
 
 The working graph is:
 
@@ -25,6 +26,16 @@ Run a safe, local LangGraph analysis without deploying a shadow clone:
 
 ```bash
 .venv/bin/python flows/orchestrator.py 1
+```
+
+To require real Gemini specialist reviews, add `GEMINI_API_KEY` to `.env`, load
+the environment, and run:
+
+```bash
+set -o allexport
+source .env
+set +o allexport
+.venv/bin/python flows/orchestrator.py 1 --ai-mode required
 ```
 
 For bridge configuration, live shadow-clone execution, testing, architecture,
